@@ -15,40 +15,42 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.nisr.sau.ui.theme.SauBlue
+import com.nisr.sau.utils.SettingsManager
+import com.nisr.sau.utils.UserSession
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun SplashScreen(navController: NavController) {
-    // Animation states
+    val context = LocalContext.current
     val alpha = remember { Animatable(0f) }
     val scale = remember { Animatable(0.9f) }
 
     LaunchedEffect(Unit) {
-        // Parallel animations: scale-in and fade-in
         launch {
-            alpha.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 1000)
-            )
+            alpha.animateTo(1f, animationSpec = tween(1000))
         }
         launch {
-            scale.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 1000)
-            )
+            scale.animateTo(1f, animationSpec = tween(1000))
         }
         
-        // Navigation delay (total ~3 seconds)
         delay(2500)
         
-        // Navigate to Login screen
-        navController.navigate("login") {
-            popUpTo("splash") { inclusive = true }
+        // Temporarily forcing Onboarding to open for verification
+        if (UserSession.isLoggedIn) {
+            navController.navigate("home") {
+                popUpTo("splash") { inclusive = true }
+            }
+        } else {
+            // Force onboarding even if complete, or you can revert this later
+            navController.navigate("onboarding") {
+                popUpTo("splash") { inclusive = true }
+            }
         }
     }
 
@@ -66,7 +68,6 @@ fun SplashScreen(navController: NavController) {
                 .alpha(alpha.value)
                 .scale(scale.value)
         ) {
-            // SAU Logo (Prominent size: 200dp)
             Image(
                 painter = painterResource(id = R.drawable.sau_logo),
                 contentDescription = "SAU Logo",
@@ -76,7 +77,6 @@ fun SplashScreen(navController: NavController) {
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Professional progress indicator (55% width)
             LinearProgressIndicator(
                 modifier = Modifier
                     .fillMaxWidth(0.55f)
