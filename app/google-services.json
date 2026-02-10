@@ -12,7 +12,20 @@
           "package_name": "com.nisr.sau"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "667407477969-spjrqr0bia07s39k3937pcav2c5elkup.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nisr.sau",
+            "certificate_hash": "bf0d89155c59b275001ff916ecaac568fdf89635"
+          }
+        },
+        {
+          "client_id": "667407477969-1q4ledsggs8dm195dv4pht3ifnfnuqr5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCEmBLYhC5wDvyG05O2z4VceKIv73qh3tI"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "667407477969-1q4ledsggs8dm195dv4pht3ifnfnuqr5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

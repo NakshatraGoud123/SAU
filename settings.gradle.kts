@@ -4,11 +4,6 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
-
-    plugins {
-        // Add Google Services plugin here
-        id("com.google.gms.google-services") version "4.4.2"
-    }
 }
 
 dependencyResolutionManagement {
