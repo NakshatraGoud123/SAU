@@ -1,0 +1,145 @@
+package com.nisr.sau
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.nisr.sau.utils.UserSession
+
+class MainActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            AppNavigation()
+        }
+    }
+}
+
+@Composable
+fun AppNavigation() {
+
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = "splash"
+    ) {
+        composable("splash") {
+            SplashScreen(navController)
+        }
+
+        composable("logo") {
+            LogoScreen(navController)
+        }
+
+        composable("onboarding") {
+            OnboardingScreen(navController)
+        }
+
+        composable("login") {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
+                onRegisterClick = {
+                    navController.navigate("register")
+                },
+                onForgotClick = {
+                    navController.navigate("forgot")
+                }
+            )
+        }
+
+        composable("register") {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    navController.navigate("login") {
+                        popUpTo("register") { inclusive = true }
+                    }
+                },
+                onLoginClick = {
+                    navController.navigate("login")
+                }
+            )
+        }
+
+        composable("forgot") {
+            ForgotPasswordScreen(
+                onBackToLogin = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable("home") {
+            HomeScreen(navController, UserSession.username, UserSession.location)
+        }
+
+        composable(
+            "all_categories?search={search}",
+            arguments = listOf(navArgument("search") { defaultValue = "" })
+        ) { backStackEntry ->
+            val search = backStackEntry.arguments?.getString("search") ?: ""
+            AllCategoriesScreen(navController, initialSearch = search)
+        }
+
+        composable(
+            "bookings?serviceName={serviceName}",
+            arguments = listOf(navArgument("serviceName") { defaultValue = "AC Deep Cleaning" })
+        ) { backStackEntry ->
+            val serviceName = backStackEntry.arguments?.getString("serviceName") ?: "AC Deep Cleaning"
+            BookingScreen(navController, serviceName)
+        }
+
+        composable("booking_success") {
+            BookingSuccessScreen(navController)
+        }
+
+        composable("profile") {
+            ProfileScreen(
+                onEditProfile = {
+                    navController.navigate("edit_profile")
+                },
+                onCartClick = {
+                    navController.navigate("cart")
+                },
+                onLogout = {
+                    UserSession.clear()
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                navController = navController
+            )
+        }
+
+        composable("edit_profile") {
+            EditProfileScreen()
+        }
+
+        composable("cart") {
+            CartScreen(navController)
+        }
+        
+        composable("orders") {
+            OrdersScreen(navController)
+        }
+        
+        composable("wishlist") {
+            WishlistScreen(navController)
+        }
+        
+        composable("my_bookings") {
+            BookingsScreen(navController)
+        }
+    }
+}
