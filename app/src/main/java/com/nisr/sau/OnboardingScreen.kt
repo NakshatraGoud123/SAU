@@ -42,7 +42,7 @@ fun OnboardingScreen(navController: NavController) {
             title = "The smarter way",
             subtitle = "Book Services Anytime",
             description = "Book home services instantly with SAU Services. From electricians to cleaners — get trusted professionals at your doorstep with real-time updates and assured quality.",
-            image = R.drawable.onboarding1
+            image = R.drawable.onboarding2
         ),
         OnboardingPage(
             title = "Get the service",

@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -19,20 +20,31 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.nisr.sau.ui.theme.SauBlue
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun SplashScreen(navController: NavController) {
-    // Fade-in animation state
+    // Animation states
     val alpha = remember { Animatable(0f) }
+    val scale = remember { Animatable(0.9f) }
 
     LaunchedEffect(Unit) {
-        // Subtle fade-in animation
-        alpha.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(durationMillis = 1000)
-        )
-        // Short delay before navigation (total ~3 seconds)
-        delay(2000)
+        // Parallel animations: scale-in and fade-in
+        launch {
+            alpha.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 1000)
+            )
+        }
+        launch {
+            scale.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 1000)
+            )
+        }
+        
+        // Navigation delay (total ~3 seconds)
+        delay(2500)
         
         // Navigate to Login screen
         navController.navigate("login") {
@@ -49,23 +61,26 @@ fun SplashScreen(navController: NavController) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.alpha(alpha.value)
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(alpha.value)
+                .scale(scale.value)
         ) {
-            // SAU Logo (House + Wrench)
+            // SAU Logo (Prominent size: 200dp)
             Image(
                 painter = painterResource(id = R.drawable.sau_logo),
                 contentDescription = "SAU Logo",
-                modifier = Modifier.size(140.dp),
+                modifier = Modifier.size(200.dp),
                 contentScale = ContentScale.Fit
             )
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Minimal, modern progress indicator (Urban Company style)
+            // Professional progress indicator (55% width)
             LinearProgressIndicator(
                 modifier = Modifier
-                    .width(120.dp)
-                    .height(3.dp),
+                    .fillMaxWidth(0.55f)
+                    .height(4.dp),
                 color = SauBlue,
                 trackColor = Color(0xFFF0F0F0)
             )
