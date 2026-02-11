@@ -72,7 +72,6 @@ fun RegisterScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 1. TOP BAR / HEADER
             Text(
                 text = "Sign up",
                 style = MaterialTheme.typography.titleLarge.copy(
@@ -86,51 +85,39 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 2. ILLUSTRATION SECTION
             Image(
                 painter = painterResource(id = R.drawable.auth_illustration),
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(240.dp),
+                    .height(200.dp),
                 contentScale = ContentScale.Fit
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 3. INTRO TEXT
             Text(
                 text = "Hello",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                ),
+                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = "Create an account to continue",
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Normal
-                ),
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 4. INPUT FIELDS
             CustomRegisterInputField(
                 label = "Full Name",
                 value = uiState.fullName,
                 onValueChange = { viewModel.onFullNameChanged(it) },
                 placeholder = "Full name",
-                error = uiState.fullNameError,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
             )
 
@@ -141,8 +128,19 @@ fun RegisterScreen(
                 value = uiState.email,
                 onValueChange = { viewModel.onEmailChanged(it) },
                 placeholder = "Your email address",
-                error = uiState.emailError,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // NEW PHONE NUMBER FIELD
+            CustomRegisterInputField(
+                label = "Phone Number",
+                value = uiState.phoneNumber,
+                onValueChange = { viewModel.onPhoneNumberChanged(it) },
+                placeholder = "7989244233",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
             )
 
@@ -153,7 +151,6 @@ fun RegisterScreen(
                 value = uiState.password,
                 onValueChange = { viewModel.onPasswordChanged(it) },
                 placeholder = "Password",
-                error = uiState.passwordError,
                 isPassword = true,
                 passwordVisible = uiState.isPasswordVisible,
                 onPasswordToggle = { viewModel.togglePasswordVisibility() },
@@ -166,15 +163,13 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 5. TERMS & CONDITIONS
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Checkbox(
                     checked = uiState.isTermsAccepted,
-                    onCheckedChange = { viewModel.onTermsAcceptedChanged(it) },
-                    colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
+                    onCheckedChange = { viewModel.onTermsAcceptedChanged(it) }
                 )
                 Text(
                     text = buildAnnotatedString {
@@ -183,44 +178,28 @@ fun RegisterScreen(
                             append("Terms of Service")
                         }
                     },
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                    modifier = Modifier.clickable { /* Handle Terms click */ }
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.clickable { }
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 6. PRIMARY ACTION BUTTON
             Button(
                 onClick = { viewModel.register() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
                 enabled = !uiState.isLoading
             ) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                 } else {
-                    Text(
-                        text = "Create an Account",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Create an Account", fontWeight = FontWeight.Bold)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 7. FOOTER NAVIGATION
             Text(
                 text = buildAnnotatedString {
                     append("Already have an account? ")
@@ -228,9 +207,8 @@ fun RegisterScreen(
                         append("Sign in")
                     }
                 },
-                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                modifier = Modifier.clickable { onSignInClick() },
-                textAlign = TextAlign.Center
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.clickable { onSignInClick() }
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -252,48 +230,26 @@ fun CustomRegisterInputField(
     keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        Text(text = label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.outline) },
+            placeholder = { Text(placeholder) },
             shape = RoundedCornerShape(12.dp),
             isError = error != null,
             visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
             trailingIcon = {
                 if (isPassword) {
                     IconButton(onClick = onPasswordToggle ?: {}) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Icon(imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, contentDescription = null)
                     }
                 }
             },
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                errorBorderColor = MaterialTheme.colorScheme.error
-            )
+            singleLine = true
         )
-        if (error != null) {
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
-            )
-        }
     }
 }

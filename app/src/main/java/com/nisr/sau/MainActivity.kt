@@ -58,7 +58,7 @@ fun AppNavigation() {
                     navController.navigate("register")
                 },
                 onForgotClick = {
-                    navController.navigate("forgot_email")
+                    navController.navigate("forgot_password")
                 }
             )
         }
@@ -76,31 +76,33 @@ fun AppNavigation() {
             )
         }
 
-        composable("forgot_email") {
-            val uiState by forgotPasswordViewModel.uiState.collectAsState()
-            if (uiState.currentStep == 1) {
-                ForgotPasswordEmailScreen(
-                    viewModel = forgotPasswordViewModel,
-                    onBackClick = { navController.popBackStack() },
-                    onCloseClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } }
-                )
-            } else if (uiState.currentStep == 2) {
-                RecoveryOptionScreen(
-                    viewModel = forgotPasswordViewModel,
-                    onBackClick = { /* Handle back inside VM or here */ },
-                    onCloseClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } }
-                )
-            } else if (uiState.currentStep == 3) {
-                OtpVerificationScreen(
-                    viewModel = forgotPasswordViewModel,
-                    onBackClick = { /* Handle back */ },
-                    onCloseClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } },
-                    onVerifySuccess = {
-                        // Navigate to Create New Password (not implemented yet, but flow is ready)
-                        navController.navigate("login")
-                    }
-                )
-            }
+        composable("forgot_password") {
+            ForgotPasswordEmailScreen(
+                viewModel = forgotPasswordViewModel,
+                onBackClick = { navController.popBackStack() },
+                onCloseClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } },
+                onNext = { navController.navigate("recovery_options") }
+            )
+        }
+
+        composable("recovery_options") {
+            RecoveryOptionScreen(
+                viewModel = forgotPasswordViewModel,
+                onBackClick = { navController.popBackStack() },
+                onCloseClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } },
+                onNext = { navController.navigate("otp_verification") }
+            )
+        }
+
+        composable("otp_verification") {
+            OtpVerificationScreen(
+                viewModel = forgotPasswordViewModel,
+                onBackClick = { navController.popBackStack() },
+                onCloseClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } },
+                onVerifySuccess = {
+                    navController.navigate("login") { popUpTo("login") { inclusive = true } }
+                }
+            )
         }
 
         composable("home") {

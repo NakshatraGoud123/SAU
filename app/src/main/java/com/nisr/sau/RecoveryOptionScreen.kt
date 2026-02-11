@@ -1,5 +1,6 @@
 package com.nisr.sau
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,10 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.nisr.sau.ui.theme.SauBg
 import com.nisr.sau.ui.theme.SauBlue
 import com.nisr.sau.ui.theme.SauTextGray
@@ -27,9 +28,17 @@ import com.nisr.sau.ui.theme.SauTextGray
 fun RecoveryOptionScreen(
     viewModel: ForgotPasswordViewModel,
     onBackClick: () -> Unit,
-    onCloseClick: () -> Unit
+    onCloseClick: () -> Unit,
+    onNext: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState.currentStep) {
+        if (uiState.currentStep == 3) {
+            onNext()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(SauBg)) {
         // Top Header Section (Same as Email Screen)
@@ -57,7 +66,7 @@ fun RecoveryOptionScreen(
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
                 Text(
-                    text = "Forgot Password",
+                    text = "Recovery Option",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -113,7 +122,12 @@ fun RecoveryOptionScreen(
                 Spacer(modifier = Modifier.weight(1f))
 
                 Button(
-                    onClick = { viewModel.sendOtp() },
+                    onClick = { 
+                        val activity = context as? Activity
+                        if (activity != null) {
+                            viewModel.sendOtp(activity)
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),

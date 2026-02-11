@@ -2,9 +2,9 @@ package com.nisr.sau
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
@@ -17,8 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.nisr.sau.ui.theme.SauBg
 import com.nisr.sau.ui.theme.SauBlue
 import com.nisr.sau.ui.theme.SauTextGray
@@ -27,9 +27,17 @@ import com.nisr.sau.ui.theme.SauTextGray
 fun ForgotPasswordEmailScreen(
     viewModel: ForgotPasswordViewModel,
     onBackClick: () -> Unit,
-    onCloseClick: () -> Unit
+    onCloseClick: () -> Unit,
+    onNext: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Navigate to next screen when step changes
+    LaunchedEffect(uiState.currentStep) {
+        if (uiState.currentStep == 2) {
+            onNext()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(SauBg)) {
         // Top Header Section
@@ -93,7 +101,7 @@ fun ForgotPasswordEmailScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = "Email Address",
+                    text = "Email or Phone Number",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -103,11 +111,14 @@ fun ForgotPasswordEmailScreen(
                     value = uiState.emailOrPhone,
                     onValueChange = { viewModel.onEmailOrPhoneChanged(it) },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("joko.lurkanto@gmail.com") },
+                    placeholder = { Text("Email or phone number") },
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = SauBlue,
                         unfocusedBorderColor = SauBg
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email // Fixed: Use Email type to allow both text and numbers without auto-switching
                     ),
                     trailingIcon = {
                         if (uiState.isInputValid) {

@@ -1,48 +1,75 @@
 package com.nisr.sau
 
-import kotlinx.coroutines.delay
-import kotlin.random.Random
+import android.app.Activity
+import com.google.firebase.FirebaseException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.PhoneAuthOptions
+import com.google.firebase.auth.PhoneAuthProvider
+import kotlinx.coroutines.tasks.await
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class AuthRepository {
 
-    /**
-     * Simulates calling /auth/forgot-password
-     */
-    suspend fun forgotPassword(emailOrPhone: String): Result<Unit> {
-        delay(1000)
-        return Result.success(Unit)
-    }
+    private val auth = FirebaseAuth.getInstance()
 
     /**
-     * Simulates calling /auth/send-otp.
-     * Returns a randomly generated 4-digit OTP.
+     * Sends a real Firebase Password Reset Email.
      */
-    suspend fun sendOtp(emailOrPhone: String, method: String): Result<String> {
-        delay(1000)
-        val otp = (1000..9999).random().toString()
-        // In a real app, the server sends this to the user's phone/email.
-        // We print it to console/log for the developer to see during testing.
-        println("REAL SIMULATION: Sending OTP ($otp) to $emailOrPhone via $method")
-        return Result.success(otp)
-    }
-
-    /**
-     * Simulates calling /auth/verify-otp
-     */
-    suspend fun verifyOtp(emailOrPhone: String, otp: String, expectedOtp: String): Result<Unit> {
-        delay(1000)
-        return if (otp == expectedOtp) {
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            auth.sendPasswordResetEmail(email).await()
             Result.success(Unit)
-        } else {
-            Result.failure(Exception("Invalid OTP. Please check the code sent to you."))
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
     /**
-     * Simulates calling /auth/reset-password
+     * Triggers Firebase Phone Authentication to send a real 6-digit SMS code.
      */
-    suspend fun resetPassword(emailOrPhone: String, newPassword: String): Result<Unit> {
-        delay(1000)
-        return Result.success(Unit)
+    suspend fun sendPhoneOtp(
+        phoneNumber: String,
+        activity: Activity
+    ): Result<String> = suspendCoroutine { continuation ->
+        val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+            override fun onVerificationCompleted(credential: com.google.firebase.auth.PhoneAuthCredential) {
+                // Auto-retrieval or instant validation (rarely happens on all devices)
+            }
+
+            override fun onVerificationFailed(e: FirebaseException) {
+                continuation.resume(Result.failure(e))
+            }
+
+            override fun onCodeSent(
+                verificationId: String,
+                token: PhoneAuthProvider.ForceResendingToken
+            ) {
+                // Return the verificationId to be used for final validation
+                continuation.resume(Result.success(verificationId))
+            }
+        }
+
+        val options = PhoneAuthOptions.newBuilder(auth)
+            .setPhoneNumber(phoneNumber)       // Phone number to verify
+            .setTimeout(60L, TimeUnit.SECONDS) // Timeout and unit
+            .setActivity(activity)             // Activity (for callback binding)
+            .setCallbacks(callbacks)           // OnVerificationStateChangedCallbacks
+            .build()
+        PhoneAuthProvider.verifyPhoneNumber(options)
+    }
+
+    /**
+     * Verifies the SMS code against the verificationId provided by Firebase.
+     */
+    suspend fun verifyPhoneCode(verificationId: String, code: String): Result<Unit> {
+        return try {
+            val credential = PhoneAuthProvider.getCredential(verificationId, code)
+            auth.signInWithCredential(credential).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

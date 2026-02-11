@@ -22,8 +22,11 @@ class RegisterViewModel : ViewModel() {
     }
 
     fun onEmailChanged(email: String) {
-        val isValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-        _uiState.update { it.copy(email = email, emailError = null, isEmailValid = isValid) }
+        _uiState.update { it.copy(email = email, emailError = null) }
+    }
+
+    fun onPhoneNumberChanged(phone: String) {
+        _uiState.update { it.copy(phoneNumber = phone, phoneError = null) }
     }
 
     fun onPasswordChanged(password: String) {
@@ -69,31 +72,26 @@ class RegisterViewModel : ViewModel() {
 
     private fun validateFields(): Boolean {
         var isValid = true
-        val fullName = _uiState.value.fullName
-        val email = _uiState.value.email
-        val password = _uiState.value.password
-        val termsAccepted = _uiState.value.isTermsAccepted
-
-        if (fullName.isBlank()) {
+        if (_uiState.value.fullName.isBlank()) {
             _uiState.update { it.copy(fullNameError = "Please enter your full name") }
             isValid = false
         }
-
-        if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        if (_uiState.value.email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(_uiState.value.email).matches()) {
             _uiState.update { it.copy(emailError = "Please enter a valid email address") }
             isValid = false
         }
-
-        if (password.length < 6) {
+        if (_uiState.value.phoneNumber.isBlank() || _uiState.value.phoneNumber.length < 10) {
+            _uiState.update { it.copy(phoneError = "Please enter a valid 10-digit phone number") }
+            isValid = false
+        }
+        if (_uiState.value.password.length < 6) {
             _uiState.update { it.copy(passwordError = "Password must be at least 6 characters") }
             isValid = false
         }
-
-        if (!termsAccepted) {
+        if (!_uiState.value.isTermsAccepted) {
             _uiState.update { it.copy(errorMessage = "You must agree to the Terms of Service") }
             isValid = false
         }
-
         return isValid
     }
 

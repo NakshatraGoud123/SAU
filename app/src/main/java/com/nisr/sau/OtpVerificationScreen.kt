@@ -1,5 +1,6 @@
 package com.nisr.sau
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -23,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.nisr.sau.ui.theme.SauBg
 import com.nisr.sau.ui.theme.SauBlue
 import com.nisr.sau.ui.theme.SauTextGray
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun OtpVerificationScreen(
@@ -32,6 +35,17 @@ fun OtpVerificationScreen(
     onVerifySuccess: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    // Firebase Phone Auth uses 6 digits, Email simulation uses 4
+    val otpLength = if (uiState.selectedMethod == RecoveryMethod.SMS) 6 else 4
+
+    // Observe toast messages from ViewModel for simulated OTP delivery
+    LaunchedEffect(Unit) {
+        viewModel.toastMessage.collectLatest { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
 
     LaunchedEffect(uiState.isOtpVerified) {
         if (uiState.isOtpVerified) {
@@ -40,7 +54,7 @@ fun OtpVerificationScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().background(SauBg)) {
-        // Top Header Section (Same as others)
+        // Top Header Section
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -65,7 +79,7 @@ fun OtpVerificationScreen(
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
                 Text(
-                    text = "Phone Verification",
+                    text = if (uiState.selectedMethod == RecoveryMethod.EMAIL) "Email Verification" else "Phone Verification",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -103,9 +117,9 @@ fun OtpVerificationScreen(
                     // OTP Input Fields
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        repeat(4) { index ->
+                        repeat(otpLength) { index ->
                             val digit = uiState.otp.getOrNull(index)?.toString() ?: ""
                             OtpDigitBox(
                                 digit = digit,
@@ -121,6 +135,15 @@ fun OtpVerificationScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = SauBlue
                     )
+                    
+                    if (uiState.errorMessage != null) {
+                        Text(
+                            text = uiState.errorMessage ?: "",
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -156,7 +179,7 @@ fun OtpVerificationScreen(
                                                 if (uiState.otp.isNotEmpty()) {
                                                     viewModel.onOtpChanged(uiState.otp.dropLast(1))
                                                 }
-                                            } else if (uiState.otp.length < 4) {
+                                            } else if (uiState.otp.length < otpLength) {
                                                 viewModel.onOtpChanged(uiState.otp + key)
                                             }
                                         },
@@ -199,11 +222,11 @@ fun OtpDigitBox(
         contentAlignment = Alignment.Center
     ) {
         if (digit.isNotEmpty()) {
-            // Check image shows dots for hidden code, let's use dots
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .background(SauBlue, RoundedCornerShape(6.dp))
+            Text(
+                text = digit,
+                style = MaterialTheme.typography.headlineSmall,
+                color = SauBlue,
+                fontWeight = FontWeight.Bold
             )
         }
     }
