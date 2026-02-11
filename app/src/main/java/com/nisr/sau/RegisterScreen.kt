@@ -1,194 +1,299 @@
 package com.nisr.sau
 
-import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.nisr.sau.ui.theme.SauBlue
-import com.nisr.sau.ui.theme.SauBg
-import com.nisr.sau.ui.theme.SauTextGray
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.nisr.sau.ui.login.RegisterViewModel
 
 @Composable
 fun RegisterScreen(
+    viewModel: RegisterViewModel = viewModel(),
     onRegisterSuccess: () -> Unit,
-    onLoginClick: () -> Unit
+    onSignInClick: () -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    
-    val context = LocalContext.current
-    val auth = FirebaseAuth.getInstance()
-    val db = FirebaseFirestore.getInstance()
+    val uiState by viewModel.uiState.collectAsState()
+    val focusManager = LocalFocusManager.current
+    val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Box(modifier = Modifier.fillMaxSize().background(SauBg)) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(
+    LaunchedEffect(uiState.isRegisterSuccess) {
+        if (uiState.isRegisterSuccess) {
+            onRegisterSuccess()
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.surface
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 1. TOP BAR / HEADER
+            Text(
+                text = "Sign up",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 2. ILLUSTRATION SECTION
+            Image(
+                painter = painterResource(id = R.drawable.auth_illustration),
+                contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
-                    .background(Color.White)
+                    .height(240.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 3. INTRO TEXT
+            Text(
+                text = "Hello",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Create an account to continue",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Normal
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 4. INPUT FIELDS
+            CustomRegisterInputField(
+                label = "Full Name",
+                value = uiState.fullName,
+                onValueChange = { viewModel.onFullNameChanged(it) },
+                placeholder = "Full name",
+                error = uiState.fullNameError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            CustomRegisterInputField(
+                label = "Email Address",
+                value = uiState.email,
+                onValueChange = { viewModel.onEmailChanged(it) },
+                placeholder = "Your email address",
+                error = uiState.emailError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            CustomRegisterInputField(
+                label = "Password",
+                value = uiState.password,
+                onValueChange = { viewModel.onPasswordChanged(it) },
+                placeholder = "Password",
+                error = uiState.passwordError,
+                isPassword = true,
+                passwordVisible = uiState.isPasswordVisible,
+                onPasswordToggle = { viewModel.togglePasswordVisibility() },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    focusManager.clearFocus()
+                    viewModel.register()
+                })
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 5. TERMS & CONDITIONS
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.pest_control_service),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    alpha = 0.3f
+                Checkbox(
+                    checked = uiState.isTermsAccepted,
+                    onCheckedChange = { viewModel.onTermsAcceptedChanged(it) },
+                    colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                 )
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", modifier = Modifier.clickable { onLoginClick() })
-                    Text("Register Account", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-                    Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.clickable { onLoginClick() })
-                }
+                Text(
+                    text = buildAnnotatedString {
+                        append("By creating an account you agree to our ")
+                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
+                            append("Terms of Service")
+                        }
+                    },
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                    modifier = Modifier.clickable { /* Handle Terms click */ }
+                )
             }
 
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = Color.White,
-                shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 6. PRIMARY ACTION BUTTON
+            Button(
+                onClick = { viewModel.register() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                enabled = !uiState.isLoading
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp)
-                ) {
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
                     Text(
-                        text = "Hello",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        text = "Create an Account",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "Create an account to continue",
-                        fontSize = 14.sp,
-                        color = SauTextGray
-                    )
+                }
+            }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                    Text("Your Name", fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Full name") },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text("Email Address", fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Your email address") },
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text("Password", fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = PasswordVisualTransformation(),
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = true, onCheckedChange = {})
-                        Text(
-                            text = "By Creating an account you agree to our Term of Service",
-                            fontSize = 12.sp,
-                            color = SauTextGray
-                        )
+            // 7. FOOTER NAVIGATION
+            Text(
+                text = buildAnnotatedString {
+                    append("Already have an account? ")
+                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
+                        append("Sign in")
                     }
+                },
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                modifier = Modifier.clickable { onSignInClick() },
+                textAlign = TextAlign.Center
+            )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
 
-                    Button(
-                        onClick = {
-                            if (name.isBlank() || email.isBlank() || password.isBlank()) {
-                                errorMessage = "All fields are required"
-                                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-                            isLoading = true
-                            auth.createUserWithEmailAndPassword(email.trim(), password.trim())
-                                .addOnCompleteListener { task ->
-                                    if (task.isSuccessful) {
-                                        val userId = auth.currentUser?.uid
-                                        val userMap = hashMapOf("name" to name, "email" to email)
-                                        if (userId != null) {
-                                            db.collection("users").document(userId).set(userMap)
-                                                .addOnSuccessListener {
-                                                    isLoading = false
-                                                    onRegisterSuccess()
-                                                }
-                                        }
-                                    } else {
-                                        isLoading = false
-                                        errorMessage = task.exception?.message
-                                        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        shape = RoundedCornerShape(28.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SauBlue),
-                        enabled = !isLoading
-                    ) {
-                        if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                        else Text("Create an Account", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                        Text("Already have an Account? ", color = SauTextGray)
-                        Text(
-                            "Sign in",
-                            color = SauBlue,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable { onLoginClick() }
+@Composable
+fun CustomRegisterInputField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    error: String? = null,
+    isPassword: Boolean = false,
+    passwordVisible: Boolean = false,
+    onPasswordToggle: (() -> Unit)? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.outline) },
+            shape = RoundedCornerShape(12.dp),
+            isError = error != null,
+            visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+            trailingIcon = {
+                if (isPassword) {
+                    IconButton(onClick = onPasswordToggle ?: {}) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-            }
+            },
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                errorBorderColor = MaterialTheme.colorScheme.error
+            )
+        )
+        if (error != null) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+            )
         }
     }
 }
