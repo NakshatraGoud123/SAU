@@ -67,6 +67,10 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
+    
+    // Explicitly add Compose Foundation for layouts
+    implementation("androidx.compose.foundation:foundation")
     
     // Coil
     implementation(libs.coil.compose)

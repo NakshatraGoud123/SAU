@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.nisr.sau.ui.theme.SauBg
 import com.nisr.sau.ui.theme.SauBlue
 import com.nisr.sau.ui.theme.SauTextGray
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun RecoveryOptionScreen(
@@ -34,9 +35,11 @@ fun RecoveryOptionScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(uiState.currentStep) {
-        if (uiState.currentStep == 3) {
-            onNext()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collectLatest { event ->
+            if (event is ForgotPasswordNavigation.NavigateToOtp) {
+                onNext()
+            }
         }
     }
 
@@ -118,6 +121,15 @@ fun RecoveryOptionScreen(
                     isSelected = uiState.selectedMethod == RecoveryMethod.SMS,
                     onClick = { viewModel.onMethodSelected(RecoveryMethod.SMS) }
                 )
+
+                if (uiState.errorMessage != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = uiState.errorMessage!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
                 Spacer(modifier = Modifier.weight(1f))
 

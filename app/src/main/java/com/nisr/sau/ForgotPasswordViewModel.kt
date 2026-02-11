@@ -21,12 +21,18 @@ data class ForgotPasswordUiState(
     val verificationId: String = "", // Firebase Verification ID for SMS
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val currentStep: Int = 1,
-    val isOtpVerified: Boolean = false
+    val isOtpVerified: Boolean = false,
+    val passwordResetLinkSent: Boolean = false
 )
 
 enum class RecoveryMethod {
     EMAIL, SMS
+}
+
+sealed class ForgotPasswordNavigation {
+    object NavigateToOptions : ForgotPasswordNavigation()
+    object NavigateToOtp : ForgotPasswordNavigation()
+    object NavigateToLogin : ForgotPasswordNavigation()
 }
 
 class ForgotPasswordViewModel(
@@ -39,44 +45,40 @@ class ForgotPasswordViewModel(
     private val _toastMessage = MutableSharedFlow<String>()
     val toastMessage = _toastMessage.asSharedFlow()
 
+    private val _navigationEvent = MutableSharedFlow<ForgotPasswordNavigation>()
+    val navigationEvent = _navigationEvent.asSharedFlow()
+
     fun onEmailOrPhoneChanged(value: String) {
         val trimmedValue = value.trim()
         val isEmail = android.util.Patterns.EMAIL_ADDRESS.matcher(trimmedValue).matches()
-        val digitCount = trimmedValue.count { it.isDigit() }
-        val isPhone = digitCount in 10..15
+        // Simple digit check for phone
+        val isPhone = trimmedValue.all { it.isDigit() || it == '+' } && trimmedValue.length >= 10
         val isValid = isEmail || isPhone
         
         _uiState.update { it.copy(
             emailOrPhone = value,
-            isInputValid = isValid
+            isInputValid = isValid,
+            errorMessage = null
         ) }
     }
 
     fun onMethodSelected(method: RecoveryMethod) {
-        _uiState.update { it.copy(selectedMethod = method) }
+        _uiState.update { it.copy(selectedMethod = method, errorMessage = null) }
     }
 
     fun onOtpChanged(otp: String) {
-        _uiState.update { it.copy(otp = otp) }
+        _uiState.update { it.copy(otp = otp, errorMessage = null) }
         
-        val requiredLength = if (_uiState.value.selectedMethod == RecoveryMethod.SMS) 6 else 4
+        val requiredLength = 6 // Firebase SMS is 6 digits
         
         if (otp.length == requiredLength) {
-            if (_uiState.value.selectedMethod == RecoveryMethod.SMS) {
-                verifyOtp()
-            } else {
-                // For Email, we just simulate verification success as it's usually link-based
-                // or if you have a custom OTP backend, call it here.
-                _uiState.update { it.copy(isOtpVerified = true) }
-            }
+            verifyOtp()
         }
     }
 
     fun startRecovery() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            // Move to step 2 to select recovery method
-            _uiState.update { it.copy(isLoading = false, currentStep = 2) }
+            _navigationEvent.emit(ForgotPasswordNavigation.NavigateToOptions)
         }
     }
 
@@ -87,25 +89,44 @@ class ForgotPasswordViewModel(
             val target = _uiState.value.emailOrPhone.trim()
 
             if (method == RecoveryMethod.EMAIL) {
+                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(target).matches()) {
+                    _uiState.update { it.copy(isLoading = false, errorMessage = "Please enter a valid email address.") }
+                    return@launch
+                }
+
                 val result = repository.sendPasswordResetEmail(target)
                 _uiState.update { it.copy(isLoading = false) }
                 result.onSuccess {
-                    _toastMessage.emit("Reset link sent to your email!")
-                    // Move to step 3 so the user sees a confirmation/otp screen
-                    _uiState.update { it.copy(currentStep = 3) }
+                    _toastMessage.emit("Password reset link sent to your email! Please check your inbox and spam folder.")
+                    _uiState.update { it.copy(passwordResetLinkSent = true) }
+                    _navigationEvent.emit(ForgotPasswordNavigation.NavigateToLogin)
                 }.onFailure { e ->
-                    _uiState.update { it.copy(errorMessage = e.message) }
+                    Log.e("ForgotPassword", "Email error: ${e.message}", e)
+                    _uiState.update { it.copy(errorMessage = e.message ?: "Failed to send reset email. Make sure the email is registered.") }
                 }
             } else {
-                // For SMS, we use the Indian prefix +91
+                val isPhone = target.all { it.isDigit() || it == '+' } && target.length >= 10
+                if (!isPhone) {
+                    _uiState.update { it.copy(isLoading = false, errorMessage = "Please enter a valid phone number.") }
+                    return@launch
+                }
+
+                // For SMS, we use the Indian prefix +91 as default if not present
                 val formattedPhone = if (target.startsWith("+")) target else "+91$target"
                 val result = repository.sendPhoneOtp(formattedPhone, activity)
                 _uiState.update { it.copy(isLoading = false) }
                 result.onSuccess { verificationId ->
-                    _uiState.update { it.copy(currentStep = 3, verificationId = verificationId) }
+                    _uiState.update { it.copy(verificationId = verificationId) }
                     _toastMessage.emit("SMS code sent!")
+                    _navigationEvent.emit(ForgotPasswordNavigation.NavigateToOtp)
                 }.onFailure { e ->
-                    _uiState.update { it.copy(errorMessage = e.message) }
+                    Log.e("ForgotPassword", "SMS error: ${e.message}", e)
+                    val displayError = when {
+                        e.message?.contains("reCAPTCHA") == true -> "Verification failed. Please try again or check your internet."
+                        e.message?.contains("quota") == true -> "SMS quota exceeded. Please try again later."
+                        else -> e.message ?: "Failed to send SMS. Please check your phone number and try again."
+                    }
+                    _uiState.update { it.copy(errorMessage = displayError) }
                 }
             }
         }
@@ -124,8 +145,9 @@ class ForgotPasswordViewModel(
                 UserSession.username = "User"
                 UserSession.isLoggedIn = true
                 _uiState.update { it.copy(isOtpVerified = true) }
+                _navigationEvent.emit(ForgotPasswordNavigation.NavigateToLogin)
             }.onFailure { e ->
-                _uiState.update { it.copy(errorMessage = e.message) }
+                _uiState.update { it.copy(errorMessage = e.message ?: "Invalid code. Please try again.") }
             }
         }
     }

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.nisr.sau.ui.theme.SauBg
 import com.nisr.sau.ui.theme.SauBlue
 import com.nisr.sau.ui.theme.SauTextGray
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun ForgotPasswordEmailScreen(
@@ -32,10 +33,12 @@ fun ForgotPasswordEmailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Navigate to next screen when step changes
-    LaunchedEffect(uiState.currentStep) {
-        if (uiState.currentStep == 2) {
-            onNext()
+    // Observe navigation events
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collectLatest { event ->
+            if (event is ForgotPasswordNavigation.NavigateToOptions) {
+                onNext()
+            }
         }
     }
 
@@ -118,7 +121,7 @@ fun ForgotPasswordEmailScreen(
                         unfocusedBorderColor = SauBg
                     ),
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email // Fixed: Use Email type to allow both text and numbers without auto-switching
+                        keyboardType = KeyboardType.Email
                     ),
                     trailingIcon = {
                         if (uiState.isInputValid) {
@@ -127,6 +130,12 @@ fun ForgotPasswordEmailScreen(
                                 contentDescription = null,
                                 tint = Color(0xFF4CAF50)
                             )
+                        }
+                    },
+                    isError = uiState.errorMessage != null,
+                    supportingText = {
+                        if (uiState.errorMessage != null) {
+                            Text(text = uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 )
