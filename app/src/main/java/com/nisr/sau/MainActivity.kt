@@ -5,6 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -26,6 +29,7 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
 
     val navController = rememberNavController()
+    val forgotPasswordViewModel: ForgotPasswordViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -54,7 +58,7 @@ fun AppNavigation() {
                     navController.navigate("register")
                 },
                 onForgotClick = {
-                    navController.navigate("forgot")
+                    navController.navigate("forgot_email")
                 }
             )
         }
@@ -72,12 +76,31 @@ fun AppNavigation() {
             )
         }
 
-        composable("forgot") {
-            ForgotPasswordScreen(
-                onBackToLogin = {
-                    navController.popBackStack()
-                }
-            )
+        composable("forgot_email") {
+            val uiState by forgotPasswordViewModel.uiState.collectAsState()
+            if (uiState.currentStep == 1) {
+                ForgotPasswordEmailScreen(
+                    viewModel = forgotPasswordViewModel,
+                    onBackClick = { navController.popBackStack() },
+                    onCloseClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } }
+                )
+            } else if (uiState.currentStep == 2) {
+                RecoveryOptionScreen(
+                    viewModel = forgotPasswordViewModel,
+                    onBackClick = { /* Handle back inside VM or here */ },
+                    onCloseClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } }
+                )
+            } else if (uiState.currentStep == 3) {
+                OtpVerificationScreen(
+                    viewModel = forgotPasswordViewModel,
+                    onBackClick = { /* Handle back */ },
+                    onCloseClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } },
+                    onVerifySuccess = {
+                        // Navigate to Create New Password (not implemented yet, but flow is ready)
+                        navController.navigate("login")
+                    }
+                )
+            }
         }
 
         composable("home") {
