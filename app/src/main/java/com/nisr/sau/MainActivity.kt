@@ -66,7 +66,7 @@ fun AppNavigation() {
                         popUpTo("register") { inclusive = true }
                     }
                 },
-                onLoginClick = {
+                onSignInClick = {
                     navController.navigate("login")
                 }
             )
