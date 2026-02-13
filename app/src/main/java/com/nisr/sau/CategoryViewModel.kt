@@ -59,6 +59,20 @@ class CategoryViewModel : ViewModel() {
                 )
             ),
             Category(
+                name = "Healthcare Services",
+                icon = "medicalservices",
+                subcategories = listOf(
+                    SubCategoryData("Medicine Delivery", "medication"),
+                    SubCategoryData("Upload Prescription", "description"),
+                    SubCategoryData("Doctor Consultation", "personsearch"),
+                    SubCategoryData("Lab Tests", "biotech"),
+                    SubCategoryData("Home Healthcare", "homehealth"),
+                    SubCategoryData("Nurse at Home", "medicalinformation"),
+                    SubCategoryData("Physiotherapy", "accessibility"),
+                    SubCategoryData("Emergency Services", "emergency")
+                )
+            ),
+            Category(
                 name = "Education Services", 
                 icon = "school",
                 subcategories = listOf(

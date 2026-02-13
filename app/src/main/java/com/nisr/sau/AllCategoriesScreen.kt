@@ -9,7 +9,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -22,19 +21,16 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-private val BrandBlue = Color(0xFF0D47A1)
-private val LightBlueBorder = Color(0xFFE3F2FD)
-private val CardBg = Color(0xFFF9FBFF)
+private val BrandBlue = Color(0xFF1E5BB8)
+private val CardBg = Color(0xFFF7F8FA)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllCategoriesScreen(
-    navController: NavController, 
+    navController: NavController,
     initialSearch: String = "",
     viewModel: CategoryViewModel = viewModel()
 ) {
@@ -44,36 +40,21 @@ fun AllCategoriesScreen(
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var searchQuery by remember { mutableStateOf(initialSearch) }
     val focusManager = LocalFocusManager.current
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
 
-    // Function to handle search logic
     fun performSearch(query: String) {
         if (query.isEmpty()) return
-        
-        // Check if query matches a category name
         val matchedCategory = categoriesFromDb.find { it.name.contains(query, ignoreCase = true) }
         if (matchedCategory != null) {
             selectedCategory = matchedCategory
+            showBottomSheet = true
             return
-        }
-
-        // Check if query matches a subcategory name
-        for (category in categoriesFromDb) {
-            if (category.subcategories.any { it.name.contains(query, ignoreCase = true) }) {
-                selectedCategory = category
-                return
-            }
-        }
-    }
-
-    // Run search on initial load if query exists
-    LaunchedEffect(initialSearch, categoriesFromDb) {
-        if (initialSearch.isNotEmpty() && categoriesFromDb.isNotEmpty()) {
-            performSearch(initialSearch)
         }
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = Color(0xFFF7F8FA),
         topBar = {
             Column(modifier = Modifier.background(Color.White)) {
                 CenterAlignedTopAppBar(
@@ -91,8 +72,8 @@ fun AllCategoriesScreen(
                     onValueChange = { searchQuery = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
-                    placeholder = { Text("Search here....", color = Color.Gray, fontSize = 14.sp) },
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    placeholder = { Text("Search categories...", color = Color.Gray, fontSize = 14.sp) },
                     leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray) },
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
@@ -121,125 +102,113 @@ fun AllCategoriesScreen(
                     columns = GridCells.Fixed(3),
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
                 ) {
                     items(categoriesFromDb) { category ->
                         CategoryGridItem(category.name, getIconFromName(category.icon)) {
                             selectedCategory = category
+                            showBottomSheet = true
                         }
                     }
                 }
             }
         }
 
-        // Subcategory Dialog
-        if (selectedCategory != null) {
-            SubCategoryDialog(
-                categoryName = selectedCategory!!.name,
-                subCategories = selectedCategory!!.subcategories,
-                navController = navController,
-                onDismiss = { selectedCategory = null }
-            )
+        if (showBottomSheet && selectedCategory != null) {
+            ModalBottomSheet(
+                onDismissRequest = { showBottomSheet = false },
+                sheetState = sheetState,
+                containerColor = Color.White,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            ) {
+                SubCategoryBottomSheetContent(
+                    categoryName = selectedCategory!!.name,
+                    subCategories = selectedCategory!!.subcategories,
+                    onSubCategoryClick = { sub ->
+                        showBottomSheet = false
+                        navController.navigate("product_list/${sub.name}")
+                    },
+                    onClose = { showBottomSheet = false }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun SubCategoryDialog(
-    categoryName: String, 
-    subCategories: List<SubCategoryData>, 
-    navController: NavController,
-    onDismiss: () -> Unit
+fun SubCategoryBottomSheetContent(
+    categoryName: String,
+    subCategories: List<SubCategoryData>,
+    onSubCategoryClick: (SubCategoryData) -> Unit,
+    onClose: () -> Unit
 ) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .navigationBarsPadding()
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-                .clickable { onDismiss() },
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(
+            Text(
+                text = categoryName,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+            IconButton(
+                onClick = onClose,
                 modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .wrapContentHeight()
-                    .clickable(enabled = false) {},
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White
+                    .size(32.dp)
+                    .background(Color(0xFFEEEEEE), CircleShape)
             ) {
+                Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.heightIn(max = 450.dp),
+            contentPadding = PaddingValues(bottom = 24.dp)
+        ) {
+            items(subCategories) { sub ->
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { onSubCategoryClick(sub) }
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        modifier = Modifier.size(85.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFF7F8FA)
                     ) {
-                        Text(
-                            text = categoryName,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .background(Color(0xFFEEEEEE), CircleShape)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = getIconFromName(sub.icon),
+                                contentDescription = sub.name,
+                                tint = BrandBlue,
+                                modifier = Modifier.size(32.dp)
+                            )
                         }
                     }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(3),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(20.dp),
-                        modifier = Modifier.heightIn(max = 400.dp)
-                    ) {
-                        items(subCategories) { sub ->
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.clickable { 
-                                    onDismiss()
-                                    navController.navigate("bookings?serviceName=${sub.name}")
-                                }
-                            ) {
-                                Surface(
-                                    modifier = Modifier.size(70.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = Color(0xFFF5F7FA)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = getIconFromName(sub.icon),
-                                            contentDescription = sub.name,
-                                            tint = BrandBlue,
-                                            modifier = Modifier.size(32.dp)
-                                        )
-                                    }
-                                }
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    text = sub.name,
-                                    fontSize = 12.sp,
-                                    textAlign = TextAlign.Center,
-                                    lineHeight = 14.sp,
-                                    color = Color.DarkGray
-                                )
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = sub.name,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 14.sp,
+                        color = Color.DarkGray,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
@@ -255,12 +224,10 @@ fun CategoryGridItem(title: String, icon: ImageVector, onClick: () -> Unit) {
             .fillMaxWidth()
     ) {
         Surface(
-            modifier = Modifier
-                .size(80.dp)
-                .shadow(elevation = 2.dp, shape = RoundedCornerShape(20.dp)),
-            shape = RoundedCornerShape(20.dp),
-            color = CardBg,
-            border = BorderStroke(1.dp, LightBlueBorder)
+            modifier = Modifier.size(90.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            shadowElevation = 2.dp
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(

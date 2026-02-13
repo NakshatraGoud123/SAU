@@ -28,6 +28,15 @@ fun getIconFromName(iconName: String): ImageVector {
         "tech", "devices" -> Icons.Default.Devices
         "men", "face" -> Icons.Default.Face
         "women", "autofixhigh" -> Icons.Default.AutoFixHigh
+        "healthcare", "medicalservices" -> Icons.Default.MedicalServices
+        "medicine", "medication" -> Icons.Default.Medication
+        "prescription", "description" -> Icons.Default.Description
+        "doctor", "personsearch" -> Icons.Default.PersonSearch
+        "lab", "biotech" -> Icons.Default.Biotech
+        "homecare", "homehealth" -> Icons.Default.Home
+        "nurse", "medicalinformation" -> Icons.Default.MedicalInformation
+        "physio", "accessibility" -> Icons.Default.Accessibility
+        "emergency", "emergency" -> Icons.Default.Emergency
         "eco" -> Icons.Default.Eco
         "shoppingbasket" -> Icons.Default.ShoppingBasket
         "localgrocerystore" -> Icons.Default.LocalGroceryStore

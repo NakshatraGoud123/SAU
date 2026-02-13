@@ -118,6 +118,19 @@ fun AppNavigation() {
         }
 
         composable(
+            "product_list/{subcategory}",
+            arguments = listOf(navArgument("subcategory") { defaultValue = "Vegetables" })
+        ) { backStackEntry ->
+            val subcategory = backStackEntry.arguments?.getString("subcategory") ?: "Vegetables"
+            ProductListScreen(navController, subcategory)
+        }
+
+        composable("product_detail/{productId}") { backStackEntry ->
+            val productId = backStackEntry.arguments?.getString("productId") ?: ""
+            ProductDetailScreen(navController, productId)
+        }
+
+        composable(
             "bookings?serviceName={serviceName}",
             arguments = listOf(navArgument("serviceName") { defaultValue = "AC Deep Cleaning" })
         ) { backStackEntry ->
